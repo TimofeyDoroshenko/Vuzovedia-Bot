@@ -90,26 +90,6 @@ CPU-only, без GPU. Работает на VPS 1 vCPU / 1 ГБ RAM.
 
 ---
 
-## Структура проекта
-├── main.py     # Точка входа, логирование, polling
-├── bot/
-│ ├── init.py   # Маркер пакета
-│ ├── config.py     # Настройки (pydantic-settings)
-│ ├── rag.py    # Модель, эмбеддинги, поиск, словарь синонимов
-│ ├── user_handlers.py  # FSM-диалог, команды, аналитика, антимат
-│ └── antispam.py   # Middleware защиты от флуда
-├── scripts/
-│ └── diag_search.py    # Калибровка поиска на 27 примерах
-├── vuz_data_full.json  # База из 1232 записей о вузах
-├── embeddings.npy  # Кэш эмбеддингов (генерируется)
-├── embeddings_metadata.pkl     # Метаданные кэша (генерируется)
-├── analytics.db    # SQLite: запросы и избранное (генерируется)
-├── .env.example    # Шаблон конфигурации
-├── requirements.txt    # Зависимости проекта
-└── pyproject.toml  # Конфиг ruff
-
-
----
 
 ## Установка и запуск
 
