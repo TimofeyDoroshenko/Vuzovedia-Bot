@@ -1,0 +1,40 @@
+# Секреты и приватность
+.env
+.env.local
+*.env
+
+# Генерируемые файлы
+embeddings.npy
+embeddings_metadata.pkl
+.embeddings_hash
+analytics.db
+analytics.db-journal
+vuz_data_full.backup.json
+
+# Логи
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
