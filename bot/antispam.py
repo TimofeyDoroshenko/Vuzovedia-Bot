@@ -38,6 +38,7 @@ _USER_BANS: dict[int, float] = {}           # user_id -> до какого times
 _USER_ACTIVITY: dict[int, list[float]] = {} # user_id -> метки событий за окно
 _GLOBAL_EVENTS: deque[float] = deque(maxlen=2000)
 _THROTTLE_MARK: dict[int, float] = {}       # последнее сообщение юзеру о блокировке
+_FALLBACK_LOG_MARK: dict[int, float] = {}   # отдельный таймер для логов fallback_text
 
 # ────── Вспомогательные ──────
 
@@ -94,6 +95,17 @@ def should_notify(user_id: int, now: float | None = None) -> bool:
     return True
 
 
+def should_log_fallback(user_id: int, now: float | None = None) -> bool:
+    """Отдельный throttle для записи в лог из fallback_text, чтобы не сбивать уведомления о бане."""
+    if now is None:
+        now = _now()
+    last = _FALLBACK_LOG_MARK.get(user_id, 0.0)
+    if now - last < FALLBACK_LOG_INTERVAL:
+        return False
+    _FALLBACK_LOG_MARK[user_id] = now
+    return True
+
+
 def input_too_long(text: str) -> bool:
     return len(text or "") > MAX_INPUT_LEN
 
@@ -127,6 +139,13 @@ def prune(now: float | None = None) -> None:
     for uid in stale_throttle:
         _THROTTLE_MARK.pop(uid, None)
 
+    stale_fb = [
+        uid for uid, t in _FALLBACK_LOG_MARK.items()
+        if now - t > FALLBACK_LOG_INTERVAL * 10
+    ]
+    for uid in stale_fb:
+        _FALLBACK_LOG_MARK.pop(uid, None)
+
 
 # ────── Middleware ──────
 
@@ -136,7 +155,7 @@ async def _safe_reply(event: TelegramObject, text: str) -> None:
         if isinstance(event, Message):
             await event.answer(text)
         elif isinstance(event, CallbackQuery):
-            await event.answer()
+            await event.answer(text, show_alert=True)
     except Exception:
         pass
 
@@ -157,11 +176,12 @@ class AntispamMiddleware(BaseMiddleware):
         if user:
             verdict = _register_event(user.id, now)
             if verdict == "just_banned":
-                if should_notify(user.id, now):
-                    await _safe_reply(
-                        event,
-                        "⛔ Слишком много запросов. Вы заблокированы на 5 минут.",
-                    )
+                # Первое сообщение о блокировке отправляем ВСЕГДА и ставим метку троттлинга
+                _THROTTLE_MARK[user.id] = now
+                await _safe_reply(
+                    event,
+                    "⛔ Слишком много запросов. Вы заблокированы на 5 минут.",
+                )
                 return
             if verdict == "banned":
                 if should_notify(user.id, now):
